@@ -1,0 +1,117 @@
+package com.example.david.wheretogo_test1;
+
+import android.app.ListActivity;
+import android.support.v7.app.ActionBarActivity;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import java.util.List;
+import android.util.Log;
+import com.facebook.Session;
+import com.facebook.SessionState;
+import com.facebook.Request;
+import com.facebook.model.GraphUser;
+import com.facebook.Response;
+import com.facebook.Request.GraphUserListCallback;
+
+public class FriendList extends ListActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_friend_list);
+        Bundle bundle=this.getIntent().getExtras();
+        if(bundle != null) {
+            Log.d("FriendList","bundle is not null");
+            Session.restoreSession(this, null, new SessionCallback(), bundle);
+        }
+        else {
+            Log.d("FriendList","bundle is null");
+        }
+
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_friend_list, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    class SessionCallback implements Session.StatusCallback {
+        @Override
+        public void call(Session session, SessionState state, Exception exception) {
+            Log.d("FriendList","SessionCallback >>");
+            if(session != null && session.isOpened()){
+                getUserData(session);
+            }
+            else {
+                if(session == null)
+                    Log.d("FriendList","session is null");
+                else
+                    Log.d("FriendList","session is not open");
+            }
+            Log.d("FriendList","SessionCallback <<");
+        }
+    }
+
+    private void getUserData(final Session session){
+        Log.d("FriendList","getUserData");
+        Request request = Request.newMeRequest(session,
+                new Request.GraphUserCallback() {
+                    @Override
+                    public void onCompleted(GraphUser user, Response response) {
+                        if(user != null && session == Session.getActiveSession()){
+                            //pictureView.setProfileId(user.getId());
+                            Log.d("FriendList",user.getName());
+
+                            //userName.setText(user.getName());
+                            getFriends();
+
+                        }
+                        if(response.getError() !=null){
+
+                        }
+                    }
+                });
+        Log.d("FriendList","getUserData: executeAsync");
+        request.executeAsync();
+    }
+
+    private void getFriends(){
+        Log.d("FriendList","getFriends");
+        Session activeSession = Session.getActiveSession();
+        if(activeSession.getState().isOpened()){
+            Request friendRequest = Request.newMyFriendsRequest(activeSession,
+                    new GraphUserListCallback(){
+                        @Override
+                        public void onCompleted(List<GraphUser> users,
+                                                Response response) {
+                            Log.d("FriendList", response.toString());
+
+                        }
+                    });
+            Bundle params = new Bundle();
+            params.putString("fields", "id,name,friends");
+            friendRequest.setParameters(params);
+            Log.d("FriendList","getFriends: executeAsync");
+            friendRequest.executeAsync();
+        }
+    }
+}
